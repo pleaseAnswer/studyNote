@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+<script>
+    // js 全局函数
+    /**
+     * decodeURI(URIstring) 
+     * decodeURI()函数可对encodeURI()函数编码过的URI进行解码 
+     * decodeURIComponent()函数可对encodeURIComponent()函数编码过的URI进行解码 
+     * 返回值 URIString的副本
+    * */ 
+    var test1 = 'http://www.w3school.com.cn/My first/'
+    document.write(encodeURI(test1) + '<br/>') 
+    //http://www.w3school.com.cn/My%20first/
+    document.write(decodeURI(test1) + '<br/>') 
+    //http://www.w3school.com.cn/My first/
+
+    document.write(encodeURIComponent(test1)+ "<br />") 
+    //http%3A%2F%2Fwww.w3school.com.cn%2FMy%20first%2F
+    document.write(decodeURIComponent(test1) + '<br/>') 
+    //http://www.w3school.com.cn/My first/
+
+    /**
+     * escape(string)
+     * escape() 函数可对字符串进行编码
+     * 返回值 已编码的string的副本
+     * 说明 不对ASCII字母和数字编码 不对*@-_+./进行编码
+    */
+    document.write(escape(test1) + '<br/>') 
+    //http%3A//www.w3school.com.cn/My%20first/
+
+    /**
+     * eval(string)
+     * eval()可计算某个字符串，并执行其中的js代码
+    */
+    eval('x=10;y=20;document.write(x*y + "<br/>")') // 200
+    document.write(eval('2+2') + '<br/>') //4
+    var x=10
+    document.write(eval(x+17) + '<br/>') // 27
+
+    /**
+     * isFinite(number)
+     * isFinite() 函数用于检查其参数是否是无穷大
+    */
+    document.write(isFinite(123)+ "<br />") // true
+    document.write(isFinite(-1.23)+ "<br />") // true
+    document.write(isFinite(5-2)+ "<br />") // true
+    document.write(isFinite(0)+ "<br />") // true
+    document.write(isFinite("Hello")+ "<br />") // false
+    document.write(isFinite("2005/12/12")+ "<br />") // false
+
+    var variables = "";
+
+    for (var name in this) {
+        variables += name + "<br />";
+    }
+
+    document.write(variables);
+</script>
+    
+</body>
+</html>

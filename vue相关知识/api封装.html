@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>api封装</title>
+</head>
+<body>
+<script>
+/**
+ * 正则
+ * 语法：/正则表达式主体/修饰符
+ * 修饰符： i--大小写不敏感  g--全局匹配 m--多行匹配
+ * 模式：
+ * [abc]--查找方括号之间的任何字符 [0-9]--查找任何0-9的数字 (x|y)--查找任何以|分隔的选项
+ * \d--查找数字 \s--找找空白字符 \b--匹配单词边界  \w 数字字母下划线 \uxxxx 十六进制数规定的unicode字符 ^ 开始 $ 结束
+ * n+ 至少包含一个 n* 包含0个或多个 n? 包含0或1个
+ * ./(.*).[0-9a-zA-Z_]
+ * $1 表示的是组引用，$1表示引用前面匹配到的第一组文本
+ * */ 
+
+// 工程化 动态引入文件 统一所有module的api
+
+// 001 require.context() 获取目录下所有js文件
+const modulesFiles = require.context('./modules', false, /\.js$/);
+// 002 遍历各模块，得到写入key+value的modules
+const apis = modulesFiles.keys().reduce((modules, modulePath) => {
+    // 0021 获取各文件内容 -- 把文件中export default作为modules对象的value
+    const value = modulesFiles(modulePath);
+    // 0022 获取文件名 -- 把js文件名作为modules对象的key ./app.vue --> app
+    const name = value.moduleName || modulePath.replace('/^\.\/(.*)\.\w+$/','$1')
+    // 0023 将key+value写入modules
+    modules[name] = value.defult
+    // 返回modules
+    return modules
+},{})
+// 003 暴露apis
+export default apis
+
+/**
+ * axios的基本配置及拦截器 
+*/
+let request = axios.create({
+    baseUrl: baseUrl
+})
+
+export default request
+
+/**
+ * \{(\w+)\}  -> {()}
+ * reg.exec(str) -> 匹配且仅一次
+ * isProcessing -> 初始化false
+ *                请求发送前 true
+ *                    响应后 false
+ *                          ==== 节流
+ * force = false --> 节流开关
+ * Object.assign()
+ * config -- header config
+ * option -- {url, method} config
+ * 
+ * 截取url/{param}
+ * replace() + Reflect.deleteProperty(data,param)
+ * 
+ * 请求发送 
+*/
+function getUrlParams(url) {
+    // './ocr/{name}'.match(/\{(\w+)\}/g -- ['{name}']
+    // /\{(\w+)\}/.exec('{name}') -- ['{name}', name]
+    return (url.match(/\{(\w+)\}/g) || []).map(param => /\{(\w+)\}/.exec(param)[1])
+}
+// 001封装请求
+function createRequest(url, methods="post") {
+    // 0011 设置节流标识1 isProcessing
+    let isProcessing = false;
+    // 0012 设置超时标识 timeOut
+    let timeOut = true;
+    // 0013 获取url/{param}的param
+    const urlParams = getUrlParams(url)
+    // 0014 使用闭包，保存isProcessing
+    return function (data, cb, config = {}, force = false) {
+        // 00141 设置节流标识2 force
+        if(isProcessing && !force) return;
+        isProcessing = true;
+        let hearderIn = {
+            headers: {}
+        }
+        // header存放Authorization等信息
+        // 00142 拼接request的请求对象
+        config = Object.assign(headerIn, config)
+
+        let option = Object.assign({
+            url: url,
+            method: method
+        }, config)
+        // 00143 将params改为传入的data中对应的值
+        urlParams.forEach(param => {
+            option.url = option.url.replace(`{${param}}`, data[param]);
+            Reflect.deleteProperty(data, param);
+        })
+        if(method == 'post') option.data = data;
+        if(method == 'get') option.params = data;
+        // 00144 发送请求 -- 设置超时重新登录
+        request(option).then(res => {
+            isProcessing = false;
+            var goLogin = false;
+            if(res.data.statusCode == '403') {
+                goLogin = true;
+            } else {
+                var resList = res.data.toString.split('statusCode=');
+                if(resList.length > 1) {
+                    var tiplist = resList[1].split(',');
+                    var code = tiplist.length > 0 ? tiplist[0] : '';
+                    if(code == '403') {
+                        goLogin = true
+                    }
+                }
+            }
+            if(goLogin) {
+                alert('登录超时，请重新登录')
+                setTimeout(() => {
+                    location.href = '/'
+                }, 500);
+                return;
+            }
+            cb(res.data, res.headers);
+        }).catch(err => {
+            isProcessing = false;
+            if(err.response) {
+                const code = err.response.status;
+                if(timeOut && code == '401') {
+                    timeOut = false;
+                    alert('登录超时，请重新登录')
+                    setTimeout(() => {
+                        timeOut = true;
+                        location.href = '/'
+                    }, 500);
+                    return;
+                }
+                cb({statusCode: code, message: `服务出错：${code},请稍后重试`})
+            } else {
+                console.error('回调中代码逻辑出问题了', err);
+            }
+        })
+    }
+}
+
+/**
+ * 结合 api + createRequest方法
+ * 002 将请求方式写入service对象
+*/
+let service = {};
+// 0021 遍历api对象
+// Object.keys() 方法会返回一个由一个给定对象的自身可枚举属性组成的数组，数组中属性名的排列顺序和正常循环遍历该对象时返回的顺序一致 。
+Object.keys(api).forEach(module => {
+    let moduleReq = service[module] = {};
+    // 0022 遍历api.module对象
+    Object.keys(api[module]).forEach(name => {
+        const apiConfig = api[module][name];
+        // 0023 判断item是string或对象
+        if(typeof apiConfig === 'string') {
+            moduleReq[name] = createRequest (apiConfig);
+        } else {
+            moduleReq[name] = createRequest(apiConfig.url, apiConfig.method);
+        }
+    })
+})
+export default service;
+
+/**
+ * main.js引入
+*/
+import request from './service/request';
+import service from './service';
+Vue.prototype.$http = request;
+Vue.prototype.$service = service;
+
+</script>
+    
+</body>
+</html>

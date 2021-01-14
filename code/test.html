@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        function cloneFunction(func) {
+            const bodyReg = /(?<={)(.|\n)+(?=})/m;
+            const paramReg = /(?<=\().+(?=\)\s+{)/;
+
+            const funcString = func.toString();
+            if (func.prototype) {
+                const param = paramReg.exec(funcString);
+                const body = bodyReg.exec(funcString);
+                console.log('bodyReg',param);
+                console.log('paramReg',body);
+                if (body) {
+                    if (param) {
+                        const paramArr = param[0].split(',');
+                        return new Function(...paramArr, body[0]);
+                    } else {
+                        return new Function(body[0]);
+                    }
+                } else {
+                    return null;
+                }
+            } else {
+                return eval(funcString);
+            }
+        }
+        let a = function(aa,vv,bb) {
+            console.log(aa,vv,bb);
+        }
+        cloneFunction(a)
+    </script>
+</body>
+</html>

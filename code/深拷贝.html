@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深拷贝</title>
+</head>
+<body>
+    
+<script>
+    /**
+    * 1 赋值
+    */  
+    let arr1 = [1,2,3,4];
+    let arr2 = arr1.slice(0);
+    let arr3 = arr1.concat();
+    arr2[1] = 6;
+    arr3[1] = 6;
+    console.log(arr1);
+    console.log(arr2);
+    console.log(arr3);
+
+    const target = {
+        field1: 1,
+        field2: undefined,
+        field3: 'Davi',
+        field4: {
+            child: 'child',
+            child2: {
+                child2: 'child2'
+            }
+        }
+    };
+    /**
+    * 2 乞丐版
+    */ 
+    let cloneTarget1 = JSON.parse(JSON.stringify(target));
+    console.log('乞丐版', cloneTarget1);
+
+    /**
+    * 3基础版
+    */ 
+    // 3.1 创建一个新的对象，遍历需要克隆的对象，将需要克隆对象的属性依次添加到新对象上，返回。
+    function clone1(target) {
+        let cloneTarget = {};
+        for(const key in target) {
+            cloneTarget[key] = target[key];
+        }
+        return cloneTarget;
+    }
+    // 3.2 深拷贝 -- 深度->递归
+    // 3.2.1 如果是原始类型，无需继续拷贝，直接返回
+    // 3.2.2 如果是引用类型，执行1
+    function clone2(target) {
+        if(typeof target === 'object') {
+            let cloneTarget = {};
+            for(const key in target) {
+                cloneTarget[key] = clone2(target[key]);
+            }
+            return cloneTarget;
+        } else {
+            return target;
+        }
+    }
+    let cloneTarget2 = clone2(target)
+    console.log('基础版', cloneTarget2);
+
+    // 考虑了递归，但依旧有很多缺陷，比如没有考虑到数组
+    const target2 = {
+        field1: 1,
+        field2: undefined,
+        field3: { child: 'child' },
+        field4: [2, 3, 4]
+    }
+
+    /**
+    * 4 考虑数组
+    */
+    function clone3(target) {
+        if(typeof target === 'object') {
+            // let cloneTarget = {};
+            let cloneTarget = Array.isArray(target) ? [] : {};
+            for(const key in target) {
+                cloneTarget[key] = clone3(target[key]);
+            }
+            return cloneTarget;
+        } else {
+            return target;
+        }
+    }
+    let cloneTarget3 = clone3(target2)
+    console.log('基础版+考虑数组', cloneTarget3);
+    let cloneTarget4 = clone2(cloneTarget3)
+    console.log('基础版', cloneTarget4);
+
+    /**
+    * 5 循环引用 -- 对象的属性间接|直接引用了自身
+    */
+    const target3 = {
+        field1: 1,
+        field2: undefined,
+        field3: { child: 'child' },
+        field4: [2, 3, 4]
+    }
+    target3.target3 = target3;
+    // let cloneTarget5 = clone3(target3)
+    // console.log('基础版+考虑数组 来循环引用', cloneTarget5);
+    // 因为递归进入死循环导致栈内存溢出
+
+    /**
+    * 5.1 额外开辟存储空间，来存储当前对象和拷贝对象的对应关系
+    * 5.1.1 当需要拷贝当前对象时，先去存储空间中找，有没有拷贝过这个对象
+    * 5.1.2 如果有，直接返回
+    * 5.1.3 如果没有，继续拷贝
+    *
+    *存储空间--需要可以存储key-value形式的数据，且key可以是一个引用类型，可以选择Map这种数据结构
+    * 001 检查map中有无克隆过的对象
+    * 002 有--直接返回
+    * 003 没有--将当前对象作为key，克隆对象作为value进行存储
+    * 004 继续克隆
+    */ 
+    function clone4(target, map = new Map()) {
+        if(typeof target === 'object') {
+            let cloneTarget = Array.isArray(target) ? [] : {};
+            if(map.get(target)) {
+                return map.get(target);
+            }
+            map.set(target, cloneTarget);
+
+            for(const key in target) {
+                // cloneTarget[key] = clone4(target[key]);
+                cloneTarget[key] = clone4(target[key], map);
+            }
+            return cloneTarget;
+        } else {
+            return target;
+        }
+    }
+    let cloneTarget6 = clone4(target3)
+    console.log('基础版+考虑数组+循环引用', cloneTarget6);
+    // target3属性变成了一个Circular类型，即循环应用的意思
+
+    /**
+    * 5 使用WeakMap替代Map
+    */
+    function clone41(target, map = new WeakMap()) {
+        if(typeof target === 'object') {
+            let cloneTarget = Array.isArray(target) ? [] : {};
+            if(map.get(target)) {
+                return map.get(target);
+            }
+            map.set(target, cloneTarget);
+
+            for(const key in target) {
+                // cloneTarget[key] = clone4(target[key]);
+                cloneTarget[key] = clone41(target[key], map);
+            }
+            return cloneTarget;
+        } else {
+            return target;
+        }
+    }
+    // 强引用
+    let obj = { name: 'Davi' };
+    const objTar = new Map();
+    objTar.set(obj, 'oneDay');
+    obj = null; 
+    // 即使手动将obj释放，但是objTar依然对obj存在强引用关系，所以这部分内存依旧无法被释放
+
+    // 弱引用
+    let obj1 = { name: 'Davi' };
+    const objTar1 = new WeakMap();
+    objTar1.set(obj1, 'oneDay');
+    obj1 = null;
+    // 当下一次垃圾回收机制执行时，这块内存会被释放掉
+
+    /**
+    * 6 提高性能 -- 打印出来性能没提高
+    * for\while\for in的执行效率 for in < for < while
+    */
+    function forEach(array, iteratee) {
+        let index = -1;
+        const length = array.length;
+        while(++index < length) {
+            iteratee(array[index], index);
+        }
+        return array
+    }
+    function clone5(target, map = new WeakMap()) {
+        if(typeof target === 'object') {
+            const isArray = Array.isArray(target);
+            let cloneTarget = isArray ? [] : {};
+            if(map.get(target)) {
+                return map.get(target);
+            }
+            map.set(target, cloneTarget);
+
+            const keys = isArray ? undefined : Object.keys(target);
+            forEach(keys || target, (value, key) => {
+                if(keys) {
+                    key = value;
+                }
+                cloneTarget[key] = clone5(target[key], map);
+            })
+            return cloneTarget;
+        } else {
+            return target;
+        }
+    }
+    const target4 = {
+        field1: 1,
+        field2: undefined,
+        field3: {
+            child: 'child'
+        },
+        field4: [2, 4, 8],
+        f: { f: { f: { f: { f: { f: { f: { f: { f: { f: { f: { f: {} } } } } } } } } } } },
+    };
+    console.time();
+    let cloneTarget7 = clone41(target4);
+    // console.log('基础版+考虑数组+循环引用', cloneTarget7);
+    console.timeEnd();
+    console.time();
+    let cloneTarget8 = clone5(target4);
+    // console.log('基础版+考虑数组+循环引用+提高性能', cloneTarget8);
+    console.timeEnd();
+
+    /**
+    * 考虑更多类型
+    */
+    const mapTag = '[object Map]';
+    const setTag = '[object Set]';
+    const arrayTag = '[object Array]';
+    const objectTag = '[object Object]';
+    const argsTag = '[object Arguments]';
+    const boolTag = '[object Bool]';
+    const dateTag = '[object Date]';
+    const errorTag = '[object Error]';
+    const numberTag = '[object Number]';
+    const regexpTag = '[object RegExp]';
+    const stringTag = '[object String]';
+    const symbolTag = '[object Symbol]';
+    const funcTag = '[object Function]';
+    const deepTag = [mapTag, setTag, arrayTag, objectTag, argsTag];
+    function forEach2(array, iteratee) {
+        let index = -1;
+        const length = array.length;
+        while(++index < length) {
+            iteratee(array[index], index);
+        }
+        return array
+    }
+    function isObject(target) {
+        const type = typeof target;
+        return target !== null && (type === 'object' || type === 'function');
+    }
+    function getType(target) {
+        return Object.prototype.toString.call(target);
+    }
+    function getInit(target) {
+        const Ctor = target.constructor;
+        return new Ctor();
+    }
+    function cloneSymbol(target) {
+        return Object(Symbol.prototype.valueOf.call(target));
+    }
+    function cloneReg(target) {
+        const reFlages = /\w*$/;
+        const result = new target.constructor(target.source, reFlages.exec(target));
+        result.lastIndex = target.lastIndex;
+        return result;
+    }
+    function cloneFunc(func) {
+        const bodyReg = /(?<={)(.|\n)+(?=})/m;
+        const paramReg = /(?<=\().+(?=\)\s+{)/;
+        const funcString = func.toString();
+        if (func.prototype) {
+            const param = paramReg.exec(funcString);
+            const body = bodyReg.exec(funcString);
+            if (body) {
+                if (param) {
+                    const paramArr = param[0].split(',');
+                    return new Function(...paramArr, body[0]);
+                } else {
+                    return new Function(body[0]);
+                }
+            } else {
+                return null;
+            }
+        } else {
+            return eval(funcString);
+        }
+    }
+
+    function clone6(target, map = new WeakMap()) {
+        // 克隆原始类型
+        if(!Object(target)) {
+            return target;
+        }
+        // 初始化
+        const type = getType(target);
+        let cloneTarget;
+        // if(deepTag.includes(type)) {
+            cloneTarget = getInit(target, type);
+        // }
+
+        // 防止循环引用
+        if(map.get(target)) {
+            return map.get(target);
+        }
+        map.set(target, cloneTarget);
+
+        // 克隆set
+        if(type === setTag) {
+            target.forEach(value => {
+                cloneTarget.add(clone6(value, map));
+            });
+            return cloneTarget;
+        }
+
+        // 克隆map
+        if(type === mapTag) {
+            target.forEach((value, key) => {
+                cloneTarget.set(key, clone6(value, map));
+            });
+            return cloneTarget;
+        }
+
+        // 克隆对象和数组
+        const keys = arrayTag ? undefined : Object.keys(target);
+        forEach(keys || target, (value, key) => {
+            if(keys) {
+                key = value;
+            }
+            cloneTarget[key] = clone6(target[key], map);
+        })
+        return cloneTarget;
+
+    }
+    const target5 = {
+        field1: 1,
+        field2: undefined,
+        field3: {
+            child: 'child'
+        },
+        field4: [2, 4, 8],
+        empty: null,
+        map: new Map(),
+        set: new Set(),
+    };
+    let cloneTarget9 = clone6(target5);
+    console.log('基础版+考虑数组+循环引用+提高性能+考虑更多类型', cloneTarget9);
+
+</script>
+</body>
+</html>

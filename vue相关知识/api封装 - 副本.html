@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>api封装</title>
+</head>
+<body>
+<script>
+
+// 工程化引入api
+const modulesFiles = require.context('./modules', false, /\.js$/);
+const apis = modulesFiles.keys().reduce((modules, modulePath) => {
+    const value = modulesFiles(modulePath);
+    const name = value.moduleName || modulePath.replace('/^\.\/(.*)\.\w+$/','$1');
+    modules[name] = value.default
+    return modules
+},{})
+export default apis
+
+const modulesFiles = require.context('./modules', false, /\.js$/);
+const apis = modulesFiles.keys().reduce((modules, modulePath) => {
+    const value = modulesFiles(modulePath);
+    const name = value.moduleName || modulePath.replace('/^\.\/(.*)\.\w+$/','$1');
+    modules[name] = value.defult;
+    return modules;
+},{})
+export default apis;
+
+
+// 请求函数封装
+let request = axios.create({
+    baseUrl: baseUrl
+})
+export default request
+
+function getParams(url) {
+    return (url.match(/\{(\w+)\}/g) || []).map(param => /\{(\w+)\}/.exec(param)[1])
+}
+function createRequest(url, method='post') {
+    let isProcessing = false;
+    const urlParams = getParams(url)
+    return async function(data, cb, config={}, force=false) {
+        if(isProcessing && !force) return;
+        isProcessing = true;
+        let headerIn = {
+            headers: {}
+        };
+        config = Object.assign(headerIn, config);
+        let option = Object.assign({
+            url: url,
+            method: method
+        }, config)
+        urlParams.forEach(param => {
+            option.url = option.url.replace(`{${param}}`,data[param])
+            Reflect.deleteProperty(data, param)
+        })
+        if(method == 'get') option.params = data;
+        if(methos == 'post') option.data = data;
+        try{
+            let res = await request(option);
+            isProcessing = false;
+            if(res.data) {
+                // 登陆超时
+                if(res.data.statusCode == '403') {
+                    alert('登陆超时，请重新登录');
+                    setTimeout(() => {
+                        location.href = '/'
+                    }, 500);
+                    return;
+                }
+                cb(res.data, res.headers)
+            } else {
+                cb({statusCode: '401', message: '服务出错，请稍后重试'})
+            }
+        }catch(err) {
+            isProcessing = false;
+            console.log('代码出错', err);
+        }
+    }
+}
+
+let request = axios.create({
+    baseUrl: baseUrl
+})
+export default request
+
+function getParams(url) {
+    return (url.match(/\{(\w+)\}/g) || []).map(param => /\{(\w+)\}/.exec(param)[1])
+}
+
+function createRequest(url, method="post") {
+    let isProcessing = false;
+    const urlParam = getParams(url)
+    return async function(data, cb, config={}, force=false) {
+        if(isProcessing && !force) return
+        isProcessing = true;
+        let headerIn = {
+            headers: {}
+        };
+        config = Object.assign(headerIn,config);
+        let option = Object.assign({
+            url: url,
+            method: method,
+        }, config);
+        urlParam.forEach(param => {
+            option.url = option.url.replace(`{${param}}`, data[param]);
+            Reflect.deleteProperty(data, param)
+        })
+        if(method == 'post') option.data = data;
+        if(method == 'get') options.params = data;
+        try{
+            let res = await request(option)
+            isProcessing = false
+            if(res.data) {
+                if(res.data.statusCode == '403') {
+                    alert('请求超时，请重新登录');
+                    setTimeout(() => {
+                        window.href('/')
+                    }, 500);
+                }
+                cb(res.data, res.headers)
+            } else {
+                cb({statusCode: '401', message: '请求超时，请稍后重试'})
+            }
+        } catch(err) {
+            isProcessing = false
+            console.log('代码出错', err);
+        }
+    }
+}
+
+// 封装请求函数调用方式 -- 使用对象方法调用 
+let service = {};
+Object.keys(apis).forEach(module => {
+    let moduleReq = service[module] = {};
+    Object.keys(apis[module]).forEach(name => {
+        const apiConfig = apis[module][name];
+        if(typeof apiConfig == 'string') {
+            moduleReq[name] = createRequest(apiConfig);
+        } else {
+            moduleReq[name] = createRequest(apiConfig.url, apiConfig.method);
+        }
+    })
+})
+export default service;
+
+
+// service -> {模块名：{apiName: 调用}}
+let service = {};
+Object.keys(apis).forEach(module => {
+    let moduleReq = service[module] = {};
+    let apisModule = apis[module];
+    Object.keys(apisModule).forEach(name => {
+        let apiConfig = apis[module][name];
+        if(typeof apiConfig == 'string') {
+            moduleReq[name] = createRequest(apiConfig)
+        } else {
+            moduleReq[name] = createRequest(apiConfig.url, apiConfig.method)
+        }
+    })
+})
+export default service;
+
+// 工程化引入api
+const modulesFiles = require.context('./modules', false, /\.js$/);
+const apis = modulesFiles.keys().reduce((modules, modulePath)=> {
+    // const value = modules[modulePath];
+    const value = modulesFiles[modulePath];
+    // const name = modules[moduleName] || modulePath.replace('/\.\/(.*)\.(\w+)/');
+    const name = value.moduleName || modulePath.replace('/^\.\/(.*)\.\w+$/', '$1');
+    modules[name] = value.default;
+    return modules;
+},{})
+export default apis
+
+// 封装请求方法
+let request = axios.create({
+    baseUrl: baseUrl
+})
+export default request
+function getParams(url) {
+    return (url.match(/\{(\w+)\}/g) || []).map(param => /\{(\w+)\}/.exec(param)[1])
+}
+function createRequest(url, method="post") {
+    let urlParam = getParams(url)
+    let isProcessing = false
+    return async function(data, cb, config={}, force=false) {
+        if(isProcessing && !force) return 
+        isProcessing = true
+        let headerIn = {
+            headers: {}
+        }
+        config = Object.assign(config, headerIn)
+        let option = Object.assign({
+            url: url,
+            method: method
+        },config)
+        urlParam.forEach(param => {
+            option.url = option.url.replace(`{${param}}`, data[param])
+            Reflect.deleteProperty(data, param)
+        })
+        if(method == 'post') option.data = data
+        if(method == 'get') option.params = data
+        try{
+            let res = await request(option)
+            isProcessing = false
+            if(res.data) {
+                if(res.data.statusCode == '403') {
+                    alert('登陆超时，请重新登录')
+                    setTimeout(() => {
+                        window.href('/')
+                    }, 500);
+                    return;
+                }
+                cb(res.data, res.headers)
+            } else {
+                cb({statusCode: '401', message: '网络请求失败，请稍后再试'})
+            }
+        } catch(err) {
+            isProcessing = false
+            console.log('代码出错', err);
+        }
+    }
+}
+// 结合 封装 + api -> 对象
+let service = {}
+Object.keys(apis).forEach(module => {
+    let apiModule = apis[module]
+    let apiReq = service[module] = {}
+    Object.keys(apiModule).forEach(api => {
+        let apiConfig = apiModule[api]
+        if(typeof apiConfig == 'string') {
+            apiReq[api] = createRequest(apiConfig)
+        } else {
+            apiReq[api] = createRequest(apiConfig.url, apiConfig.method)
+        }
+    })
+})
+export default service
+
+
+</script>
+    
+</body>
+</html>

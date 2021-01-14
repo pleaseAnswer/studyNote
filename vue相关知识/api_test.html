@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>api test</title>
+</head>
+<body>
+<script>
+    // api工程化动态引入
+    const modulesFile = require.context('./modules', false, '/\./js$/');
+    const apis = modulesFile.keys().reduce((modules, path) => {
+        const value = modulesFile(path)
+        const name = value.moduleName || path.replace('/^\.\/(.*)\.\w+$/', '$1')
+        modules[name] = value.default
+        return modules
+    }, {})
+    export default apis
+
+    let request = axios.create({
+        baseUrl: baseUrl
+    })
+    
+    function getParams(url) {
+        return (url.match(/\{(\w*)\}/g) || []).map(param => /\{(\w*)\}/.exec(param)[1])
+    }
+    function createRequest(url, method = 'post') {
+        let isProcessing = false;
+        let timeOut = false;
+        let urlParams = getParams(url)
+        return function(data, cb, config = {}, force = false) {
+            if(isProcess && !force) return;
+            isProcessing = true
+            let headerIn = {
+                headers: { }
+            }
+            config = Object.assign(headerIn, config);
+            let option = Object.assign({
+                url,
+                method
+            }, config)
+            urlParams.forEach(param => {
+                option.url = option.url.replace(`${param}`,data[param])
+                Reflect.deleteProperty(data, param)
+            })
+            if(method == 'post') option.data = data;
+            if(method == 'get') option.params = data;
+
+            request(option).then(res => {
+                isProcessing = false
+                let goLogin = false
+                if(res.data.statusCode == '401') {
+                    goLogin = true
+                }
+                // 其他情况下
+                if(goLogin) {
+                    alert('登陆超时，请重新登录')
+                    setTimeout(() => {
+                        location.href = '/'
+                    }, 500);
+                    return 
+                }
+                cb(res.data, res.headers)
+            }).catch(err => {
+                console.err('请求出错')
+            })
+        }
+    }
+
+    let service = {}
+    Object.keys(api).forEach(module => {
+        let apiModule = service[module] = {}
+        Object.keys(api[module]).forEach(name => {
+            let apiUrl = api[module][name]
+            if(typeof apiUrl == 'string') {
+                apiModule[name] = createRequest(apiUrl)
+            } else {
+                apiModule[name] = createRequest(apiUrl.url, apiUrl.method)
+            }
+        })
+    })
+    export default service
+
+    import service from ''
+    vew.prototype.$service = service
+</script>
+</body>
+</html>
