@@ -6,39 +6,19 @@
   * 因为在jscode中运行的，这是一个没有窗口对象的环境
 
 * 封装api
-  * 多种情况做判断匹配时，可使用js对象的方式储存，再用object[key]取出
+  * 多种情况做判断匹配时，可使用**js对象的方式储存，再用object[key]取出**
 
 ![Image](./img/faceObj.png)
 
 * bug：textarea与原生下拉框重叠 -- 实现textarea与view的切换展示
 
-* 实现小程序分享到朋友圈
-  * 小程序页面默认不可被分享到朋友圈，开发者需主动设置。
-  * 页面允许被分享到朋友圈，需满足两个条件：
-    * 页面需设置“发送给朋友” --- Page.onShareAppMessage
-    * 页面需设置允许“分享到朋友圈”，同时可自定义标题、分享图等 --- Page.onShareTimeline
+* 小程序文本可复制 -- text标签
+
+* 长按识别二维码 -- image标签设置**show-menu-by-longpress**属性为true
+
+### 请求封装
 
 ```js
-Page({
-    // 第一步：设置可被分享
-    onShareAppMessage(res) {
-        return {
-            title: '传统分享的标题'
-        }
-    },
-    // 第二步：设置分享到朋友圈的标替
-    onShareTimeline(res) {
-        return {
-            title: '转发到朋友圈',
-            query: '我是携带的参数'
-        }
-    }
-})
-```
-
-* 请求封装
-
-  ```js
   // service > api > index.js
   export default {
     KgetAreaList: '/claimCard/getAreaList', //获取区域级
@@ -46,9 +26,9 @@ Page({
     KcheckCaptcha: '/claimCard/checkCaptcha', //校验验证码
     KgetGdCity: '/claimCard/getGdCity', //获取广东省下拉
   }
-  ```
+```
 
-  ```js
+```js
   // service > index.js
   const api = require('./api/index')
   const apiHost = 'https://ssmi.cebbank.com/Integration'
@@ -82,97 +62,158 @@ Page({
     }
   })
   module.exports = service
-  ```
+```
 
-* 组件封装
+### 组件封装
 
-  1. 定义
+1. 定义
   1.1  在.json文件中做自定义组件声明
 
-     ```json
+   ```json
      {
-         "component": true
+      "component": true
      }
-     ```
+   ```
 
   1.2 在wxml文件编写组件模板，在wxss文件中加入组件样式
   1.3 在自定义组件的js文件中，需要使用Component()来注册组件，并提供组件的属性定义、内部数据和自定义方法
 
-     ```js
-     Component({
-         // 组件的对外属性
-         properties: {
-             innerText: {
-                 type: String, // 类型 -- 必填
-                 value: '', // 属性初始值 -- 可选
-                 observer(newVal, oldVal, changePath) {
-                     // 属性改变时的执行函数 -- 可选
-                 }
-             },
-             myProperty2: String
-         },
-         // 私有数据，供组件内使用，可用于模板渲染
-         data: {},
-         // 组件的方法列表
-         methods: {
-             // 内部方法建议以下划线开头
-         }
-     })
-     ```
+   ```js
+   Component({
+       // 组件的对外属性
+       properties: {
+           innerText: {
+               type: String, // 类型 -- 必填
+               value: '', // 属性初始值 -- 可选
+               observer(newVal, oldVal, changePath) {
+                   // 属性改变时的执行函数 -- 可选
+               }
+           },
+           myProperty2: String
+       },
+       // 私有数据，供组件内使用，可用于模板渲染
+       data: {},
+       // 组件的方法列表
+       methods: {
+           // 内部方法建议以下划线开头
+       }
+   })
+   ```
 
-  2. 使用自定义组件
+2. 使用自定义组件
   2.1 在json文件中进行引用声明
 
-  ```json
-  {
-      "usingComponents": {
-          "conponent-tag-name": "path/component"
-      }
-  }
-  ```
+   ```json
+   {
+       "usingComponents": {
+           "conponent-tag-name": "path/component"
+       }
+   }
+   ```
 
-  2.2 在页面的wxml中就可以像使用基础组件一样使用
+   2.2 在页面的wxml中就可以像使用基础组件一样使用
 
-  ```html
-  <view>
-      <component-tag-name inner-text="some text"></component-tag-name>
-  </view>
-  ```
+   ```html
+   <view>
+       <component-tag-name inner-text="some text"></component-tag-name>
+   </view>
+   ```
 
-* 人脸识别
-  * wx.startFacialRecognitionVerify(OBJECT)
-  * 验证方式：在线验证 -- 读数字 屏幕闪烁
+### 功能 && api
 
-  ```js
-  /**
-   * return 值
-   * errMsg: String 错误信息
-   * errCode：Number 错误码
-   * verifyResult: String 本次认证结果凭证
-  */
-  wx.startFacialRecognitionVerify({
-      name: String, // 必填
-      idCardNumber: String, // 必填
-      success: Function,
-      fail: Function,
-      complete: Function, // 必填
-      // 0-读数字 1- 反光 2-检查是否支持反光
-      checkAliveType: Number
-  })
-  ```
+#### 实现小程序分享到朋友圈
 
-* 小程序内跳转至其他小程序
-  * wx.navigateToMiniProgram(Object object)
+> 小程序页面默认不可被分享到朋友圈，开发者需主动设置。
 
-    ```js
-    wx.navigateToMiniProgram({
-        appId: string, // 必填--要打开的小程序appId
-        path: string, // 打开的页面路径，为空则打开首页
+* 页面允许被分享到朋友圈，需满足两个条件：
+  * 页面需设置“发送给朋友” --- **Page.onShareAppMessage**
+  * 页面需设置允许“分享到朋友圈”，同时可自定义标题、分享图等 --- **Page.onShareTimeline**
+
+```js
+Page({
+    // 第一步：设置可被分享
+    onShareAppMessage(res) {
+        return {
+            title: '传统分享的标题'
+        }
+    },
+    // 第二步：设置分享到朋友圈的标替
+    onShareTimeline(res) {
+        return {
+            title: '转发到朋友圈',
+            query: '我是携带的参数'
+        }
+    }
+})
+```
+
+#### 人脸识别 wx.startFacialRecognitionVerify(OBJECT)
+
+> 验证方式：在线验证 -- 读数字 屏幕闪烁
+
+```js
+/**
+ * return 值
+ * errMsg: String 错误信息
+ * errCode：Number 错误码
+ * verifyResult: String 本次认证结果凭证
+*/
+wx.startFacialRecognitionVerify({
+    name: String, // 必填
+    idCardNumber: String, // 必填
+    success: Function,
+    fail: Function,
+    complete: Function, // 必填
+    // 0-读数字 1- 反光 2-检查是否支持反光
+    checkAliveType: Number
+})
+```
+
+#### 小程序内跳转至其他小程序 wx.navigateToMiniProgram(Object object)
+
+```js
+wx.navigateToMiniProgram({
+    appId: string, // 必填--要打开的小程序appId
+    path: string, // 打开的页面路径，为空则打开首页
+})
+```
+
+#### 文本复制 wx.setClipboardData(object)
+
+```js
+var inviteName = that.data.copyData[2].url;
+wx.setClipboardData({
+    //准备复制的数据
+    data: inviteName,
+    success: function (res) {
+      this.toastComponent.showToastComponent("复制成功")
+    }
+});
+```
+
+#### base64转临时url
+
+```js
+//声明文件系统
+const fs = wx.getFileSystemManager();
+//随机定义路径名称
+var times = new Date().getTime();
+var codeimg = wx.env.USER_DATA_PATH + '/' + times + '.png';
+//将base64图片写入
+fs.writeFile({
+  filePath: codeimg,
+  data: pics,
+  encoding: 'base64',
+  success: () => {
+    //写入成功了的话，新的图片路径就能用了
+    var urls = new Array(codeimg)
+    wx.previewImage({
+      //当前显示图片
+      urls,
     })
-    ```
-
-* 小程序文本可复制 -- text标签
-* 长按识别二维码 -- image标签设置show-menu-by-longpress属性为true
+  }
+});
+```
 
 ## 公众号
 
@@ -709,34 +750,3 @@ getPhoto(e) {
 
 * 设计模式
 * 树的算法
-
-* js基础
-* 类型，涉及以下：
-  * 类型种类
-  * 判断
-  * 转换
-  * 深度拷贝
-* 闭包，涉及以下：
-  * 作用域v8
-  * 垃圾回收
-  * 变量提升
-* 异步，涉及以下：
-  * Promsie 的历史，用法，简单手写 Promsie 实现
-  * async await 原理，generator
-  * 宏任务与微任务区别
-* 原型链，涉及以下
-  * prototype 和 __proto__
-  * 继承
-  * oop 编程思想
-* 模块化
-  * CommonJS 和 ES6 module
-  * AMD 与 CMD 区别（比较旧可以忽略）
-* ES6 特性
-  * let const
-  * 箭头函数
-  * Set、Map、WeakSet 和 WeakMap
-  * 之前提及的 Promsie，async，Class，ES6 module
-
-## 常识积累
-
-* loading时，按钮点击失效设置
