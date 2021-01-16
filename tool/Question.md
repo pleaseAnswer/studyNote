@@ -16,6 +16,8 @@
 
 * 长按识别二维码 -- image标签设置**show-menu-by-longpress**属性为true
 
+* 删除对象属性 **`delete Object.属性`**
+
 ### 请求封装
 
 ```js
