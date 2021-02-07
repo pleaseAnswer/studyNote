@@ -18,6 +18,14 @@
 
 * 删除对象属性 **`delete Object.属性`**
 
+### 小程序渲染图片出现403
+
+* 访问别人服务器时，连本地的防盗链（referrer）也携带了过去。携带了防盗链，别人的服务器就会对此做相关处理，看看是不是本站在访问，否则给个403。
+* 解决403的方法，就是不要设置防盗链。可是我不会设置referrer，也不知道有没有。
+* 就换了个方法，换一个链接可以访问图片的链接：可以使用`images.weserv.nl`链接来访问报403的图片
+
+`https://images.weserv.nl/?url=网络图片地址`
+
 ### 请求封装
 
 ```js
@@ -69,57 +77,57 @@
 ### 组件封装
 
 1. 定义
-  1.1  在.json文件中做自定义组件声明
+    1.1  在.json文件中做自定义组件声明
 
-   ```json
-     {
-      "component": true
-     }
-   ```
+```json
+ {
+  "component": true
+ }
+```
 
-  1.2 在wxml文件编写组件模板，在wxss文件中加入组件样式
-  1.3 在自定义组件的js文件中，需要使用Component()来注册组件，并提供组件的属性定义、内部数据和自定义方法
+    1.2 在wxml文件编写组件模板，在wxss文件中加入组件样式
+    1.3 在自定义组件的js文件中，需要使用Component()来注册组件，并提供组件的属性定义、内部数据和自定义方法
 
-   ```js
-   Component({
-       // 组件的对外属性
-       properties: {
-           innerText: {
-               type: String, // 类型 -- 必填
-               value: '', // 属性初始值 -- 可选
-               observer(newVal, oldVal, changePath) {
-                   // 属性改变时的执行函数 -- 可选
-               }
-           },
-           myProperty2: String
+```js
+Component({
+   // 组件的对外属性
+   properties: {
+       innerText: {
+           type: String, // 类型 -- 必填
+           value: '', // 属性初始值 -- 可选
+           observer(newVal, oldVal, changePath) {
+               // 属性改变时的执行函数 -- 可选
+           }
        },
-       // 私有数据，供组件内使用，可用于模板渲染
-       data: {},
-       // 组件的方法列表
-       methods: {
-           // 内部方法建议以下划线开头
-       }
-   })
-   ```
+       myProperty2: String
+   },
+   // 私有数据，供组件内使用，可用于模板渲染
+   data: {},
+   // 组件的方法列表
+   methods: {
+       // 内部方法建议以下划线开头
+   }
+})
+```
 
 2. 使用自定义组件
-  2.1 在json文件中进行引用声明
+    2.1 在json文件中进行引用声明
 
-   ```json
-   {
-       "usingComponents": {
-           "conponent-tag-name": "path/component"
-       }
+```json
+{
+   "usingComponents": {
+       "conponent-tag-name": "path/component"
    }
-   ```
+}
+```
 
    2.2 在页面的wxml中就可以像使用基础组件一样使用
 
-   ```html
-   <view>
-       <component-tag-name inner-text="some text"></component-tag-name>
-   </view>
-   ```
+```html
+<view>
+   <component-tag-name inner-text="some text"></component-tag-name>
+</view>
+```
 
 ### 功能 && api
 
